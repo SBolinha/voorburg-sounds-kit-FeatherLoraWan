@@ -2,6 +2,15 @@
 
 This publication is the Feather LoRaWAN development, based on the [Amsterdam Sounds Kit](https://gitlab.waag.org/lodewijk/amsterdam-sounds-kit). It uses an **Adafruit Feather RP2040 RFM95** with an **SPH0645 I2S microphone** and an external BAT-to-A0 resistor divider. The RFM95 provides a real EU868 LoRaWAN radio, so the device can operate from a battery through a Things Indoor gateway without Wi-Fi. For the Wi-Fi-based Pico 2 W implementation, see the companion `voorburg-sounds-kit-Pico2Wifi` publication.
 
+## Two Voorburg Sounds Kit solutions
+
+Both Voorburg builds use the same dual-core measurement approach: one core continuously captures and analyses the microphone signal, while the other core handles networking, persistence, and reporting.
+
+* **Wi-Fi solution:** [voorburg-sounds-kit-Pico2Wifi](https://github.com/SBolinha/voorburg-sounds-kit-Pico2Wifi) — Raspberry Pi Pico 2 W with Wi-Fi and a software LoRaWAN gateway path.
+* **LoRaWAN solution:** [voorburg-sounds-kit-FeatherLoraWan](https://github.com/SBolinha/voorburg-sounds-kit-FeatherLoraWan) — Adafruit Feather RP2040 RFM95 with a physical EU868 LoRaWAN radio.
+
+Choose the Pico 2 W for Wi-Fi backhaul and software gateway flexibility, or the Feather for direct LoRaWAN operation through a gateway.
+
 The RP2040 dual-core division follows the stable Pico architecture: **core 1 owns I2S, DMA audio capture, and SLM/DSP statistics; core 0 owns LMIC, LoRaWAN receive windows, payload creation, USB logging, and LittleFS persistence**. Measurements stay on a fixed five-minute schedule and are handed over atomically. Flash commits request a bounded core-1 audio pause and resume only after the write completes. A core-1 heartbeat and watchdog supervision recover from a stalled audio path.
 
 Compared with the Amsterdam base, this development adds the RP2040 RFM95 pin map and bundled EU868 LMIC 5.0.1, ABP session/counter persistence, LoRaWAN DeviceTime timestamps, optional battery ADC bytes, a TTN uplink formatter, and the dual-core/flash-safety lifecycle. These changes separate radio transport from audio work and avoid USB logging backpressure; the published runtime logging is limited to startup, UTC synchronization, payload hex, errors, and essential transmit completion.
