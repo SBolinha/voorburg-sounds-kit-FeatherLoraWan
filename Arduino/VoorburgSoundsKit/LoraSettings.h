@@ -53,7 +53,7 @@
   static const u1_t PROGMEM APPSKEY[16] = {0};
   static const u4_t DEVADDR = 0x01020304;
 
-  // Identity callbacks are initialized explicitly in AmsterdamSoundsKit.ino.
+  // Identity callbacks are initialized explicitly in VoorburgSoundsKit.ino.
 #else
 
   

@@ -28,5 +28,5 @@ Feather RP2040 RFM pin map and checks the loaded session keys before transmittin
 Validate the actual bundled packet builder from the repository root with:
 
 ```sh
-node Tools/test_feather_session_crypto.mjs Arduino/AmsterdamSoundsKit/src/FeatherLMIC --build-dir /tmp/feather-session-crypto
+node Tools/test_feather_session_crypto.mjs Arduino/VoorburgSoundsKit/src/FeatherLMIC --build-dir /tmp/feather-session-crypto
 ```

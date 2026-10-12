@@ -84,11 +84,11 @@ The legacy Feather M0 build still uses the Adafruit SAMD board package.
 
 #### MCCI LoRaWAN LMIC library
 
-The Feather sketch bundles **MCCI LoRaWAN LMIC 5.0.1** under `Arduino/AmsterdamSoundsKit/src/FeatherLMIC`, including its EU868/SX1276 configuration. Arduino IDE compiles this copy directly; installing or updating a global LMIC library does not change the Feather build. Version 6.0.1 does not load ABP session keys into the crypto backend and must not be used for this firmware. The sketch checks its LMIC version and verifies the loaded ABP keys before transmitting.
+The Feather sketch bundles **MCCI LoRaWAN LMIC 5.0.1** under `Arduino/VoorburgSoundsKit/src/FeatherLMIC`, including its EU868/SX1276 configuration. Arduino IDE compiles this copy directly; installing or updating a global LMIC library does not change the Feather build. Version 6.0.1 does not load ABP session keys into the crypto backend and must not be used for this firmware. The sketch checks its LMIC version and verifies the loaded ABP keys before transmitting.
 
-#### AmsterdamSoundsKit
+#### VoorburgSoundsKit
 
-* Download the code and open [**AmsterdamSoundsKit.ino**](Arduino/AmsterdamSoundsKit/AmsterdamSoundsKit.ino) in the  Arduino IDE.
+* Download the code and open [**VoorburgSoundsKit.ino**](Arduino/VoorburgSoundsKit/VoorburgSoundsKit.ino) in the  Arduino IDE.
 
 ## Configuration
 
@@ -101,7 +101,7 @@ Set this to `1` in `LoraSettings.h` to enable USB Serial diagnostics, or leave i
 
 The LoRaWAN code currently uses ABP, so there is no OTAA join step. The red user LED is on only during an application-payload transmission cycle, including its receive windows. It stays off while measuring and during automatic MAC-only replies; the separate charging LED is controlled by the board hardware. With optional radio logging enabled, `EV_TXSTART` and `EV_TXCOMPLETE` report radio transmission progress. Uplinks are unconfirmed, so transmit completion does not prove that TTN received the sample.
 
-Snippet from [*LoraSettings.h*](Arduino/AmsterdamSoundsKit/LoraSettings.h)
+Snippet from [*LoraSettings.h*](Arduino/VoorburgSoundsKit/LoraSettings.h)
 
 ```c
 #define USB_LOGGING 1
@@ -118,7 +118,7 @@ hidden prompts. The checker reads the local `LoraSettings.h` and reports only
 whether each key matches. It does not contact TTN, print or save the entered keys,
 change credentials, or alter frame counters.
 
-Snippet from [*LoraSettings.h*](Arduino/AmsterdamSoundsKit/LoraSettings.h)
+Snippet from [*LoraSettings.h*](Arduino/VoorburgSoundsKit/LoraSettings.h)
 
 ```c
 static const PROGMEM u1_t NWKSKEY[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -137,7 +137,7 @@ static const u4_t DEVADDR = 0x00000000;
 
 #### SLM settings
 
-Snippet from [*SLMSettings.h*](Arduino/AmsterdamSoundsKit/SLMSettings.h)
+Snippet from [*SLMSettings.h*](Arduino/VoorburgSoundsKit/SLMSettings.h)
 
 ```c
 // Current mode
@@ -161,7 +161,7 @@ Defines if and how the device outputs to the serial port, allowed values:
 
 
 * *Other settings*  
-These settings are probably good to go. They allow you to tweak how the audio is analysed. Current settings make the device capture audio at 48000Hz and do a FFT analysis over 1024 samples of audio at a rate of 32 times per second. Changing these settings could lead to performance or memory issues. For example, longer FFT requires more processing time and longer buffers. Secondly the  scaling table for correcting the frequency response of the microphone and doing dBA weighting is precalculated for a specific FFT size. Changing this would require precalculating a new table ([*EQ.h*](Arduino/AmsterdamSoundsKit/EQ.h)).
+These settings are probably good to go. They allow you to tweak how the audio is analysed. Current settings make the device capture audio at 48000Hz and do a FFT analysis over 1024 samples of audio at a rate of 32 times per second. Changing these settings could lead to performance or memory issues. For example, longer FFT requires more processing time and longer buffers. Secondly the  scaling table for correcting the frequency response of the microphone and doing dBA weighting is precalculated for a specific FFT size. Changing this would require precalculating a new table ([*EQ.h*](Arduino/VoorburgSoundsKit/EQ.h)).
 
 #### Acoustic calibration compared with the Feather M0
 
@@ -181,7 +181,7 @@ The software basis has been verified. This Feather's physical calibration and id
 
 #### LMIC library settings  
 
-The Feather's network plan is fixed in `Arduino/AmsterdamSoundsKit/src/FeatherLMIC/project_config/lmic_project_config.h`. Every LMIC source file reads this same project-local configuration. No compiler flags or edits to the Arduino libraries folder are required.
+The Feather's network plan is fixed in `Arduino/VoorburgSoundsKit/src/FeatherLMIC/project_config/lmic_project_config.h`. Every LMIC source file reads this same project-local configuration. No compiler flags or edits to the Arduino libraries folder are required.
 
 ```c
 #define CFG_eu868 1
@@ -247,7 +247,7 @@ The October 10 v6 export confirms bidirectional operation: measurement FCnt1280 
 The following tools can be found in the repository:
 
 * [*precalculate_bin_scale_table*](Tools/PrecalculateBinScaleTable/precalculate_bin_scale_table.rb)  
-A Ruby script that generates the table in [*EQ.h*](Arduino/AmsterdamSoundsKit/EQ.h). It uses the frequency response of the microphone as input and a formula for calculating the frequency response of the dBA weighting. The microphone response was extracted from the datasheet.
+A Ruby script that generates the table in [*EQ.h*](Arduino/VoorburgSoundsKit/EQ.h). It uses the frequency response of the microphone as input and a formula for calculating the frequency response of the dBA weighting. The microphone response was extracted from the datasheet.
 * [*SPLDisplay*](Tools/SPLDisplay/SPLDisplay.pde)  
 A Processing sketch that reads data from the sensor in order to display it nicely. ([SLM settings](#slm-settings)).
 * [*SpectrumPlotter*](Tools/SPLDisplay/SPLDisplay.pde)  

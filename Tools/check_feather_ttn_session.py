@@ -14,7 +14,7 @@ import warnings
 from check_feather_identity import array_key, strip_comments
 
 
-DEFAULT_FEATHER = Path(__file__).resolve().parents[1] / "Arduino/AmsterdamSoundsKit/LoraSettings.h"
+DEFAULT_FEATHER = Path(__file__).resolve().parents[1] / "Arduino/VoorburgSoundsKit/LoraSettings.h"
 
 
 def parse_ttn_key(value: str) -> bytes:

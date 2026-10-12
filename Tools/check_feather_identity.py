@@ -11,7 +11,7 @@ from typing import Optional
 
 
 DEFAULT_FEATHER = Path(
-    "/Users/frits/Documents/Codex/amsterdam-sounds-kit/Arduino/AmsterdamSoundsKit/LoraSettings.h"
+    "/Users/frits/Documents/Codex/amsterdam-sounds-kit/Arduino/VoorburgSoundsKit/LoraSettings.h"
 )
 DEFAULT_PICO = Path(
     "/Users/frits/Documents/Codex/Voorburg-sounds-kit/Arduino/VoorburgSoundsKit/LoraSettings.h"
