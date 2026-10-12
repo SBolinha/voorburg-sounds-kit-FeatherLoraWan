@@ -1,0 +1,171 @@
+/* 
+ * This example shows how to record I2S audio via DMAC to a buffer
+ * Try this with the MEMS SPH0645LM4H-B
+ * Altered from:
+ * -https://github.com/adafruit/Adafruit_ZeroI2S/blob/master/examples/dma_passthrough/dma_passthrough.ino
+ * -https://learn.adafruit.com/adafruit-i2s-stereo-decoder-uda1334a/arduino-wiring-test
+ * -https://forum.arduino.cc/t/i2s-mclk-output-on-samd21/699032/4
+ * Adafruit library is kind of hardcoded to 44100
+ */
+
+//#define DEBUG_PRINTLN true
+#include <Adafruit_ZeroI2S.h>
+#include <Adafruit_ZeroDMA.h>
+#include <SPI.h>
+ 
+#define BUFSIZE 256
+
+int data1[BUFSIZE];
+int data2[BUFSIZE];
+
+// flag to be set when there is new data
+volatile bool newData1 = false;
+volatile bool newData2 = false;
+volatile uint8_t underrun = 0;
+bool resync = true;
+
+// we need one DMA channel for receive (RX), either sending or receiving on an SAMD21
+Adafruit_ZeroDMA rxDMA1;
+Adafruit_ZeroDMA rxDMA2;
+DmacDescriptor *rxDesc1;
+DmacDescriptor *rxDesc2;
+ZeroDMAstatus stat;
+Adafruit_ZeroI2S i2s;
+void dummy_callback(Adafruit_ZeroDMA *dma) {  } //do nothing
+
+// this will get called when a buffer of data has been received. */
+void dma_callback1(Adafruit_ZeroDMA *dma) {
+  rxDMA2.startJob();
+  newData1 = true;
+  newData2 = false;
+  underrun++;
+}
+
+void dma_callback2(Adafruit_ZeroDMA *dma) {
+  rxDMA1.startJob();
+  newData2 = true;
+  newData1 = false;
+  underrun++;
+}
+
+// 
+void setup()
+{
+  Serial.begin(9600);
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB
+  }
+  Serial.println( "I2S recording to serial");
+  Serial.println( "Configuring DMA triggers ");
+  rxDMA1.setTrigger(I2S_DMAC_ID_RX_0);
+  rxDMA2.setTrigger(I2S_DMAC_ID_RX_0);
+  rxDMA1.setAction(DMA_TRIGGER_ACTON_BEAT);
+  rxDMA2.setAction(DMA_TRIGGER_ACTON_BEAT);
+  Serial.print( "Allocating DMA channels... ");
+  stat = rxDMA1.allocate();
+  rxDMA1.printStatus(stat);
+  stat = rxDMA2.allocate();
+  rxDMA2.printStatus(stat);
+  Serial.println( "Setting up transfer ");
+
+  // suprisingly enough we have no gliches in the sound (or maybe only if we copy very shortly after new buffer?)
+  rxDesc1 = rxDMA1.addDescriptor(
+    (void *)(&I2S->DATA[0].reg),   // move data from here
+    data1,              // to here
+    BUFSIZE,            // this many...
+    DMA_BEAT_SIZE_WORD, // 32 bit
+    false,              // increment source addr
+    true,               // increment dest
+    DMA_ADDRESS_INCREMENT_STEP_SIZE_1);              
+
+  rxDesc2 = rxDMA2.addDescriptor(
+    (void *)(&I2S->DATA[0].reg),   // move data from here
+    data2,              // to here
+    BUFSIZE,            // this many...
+    DMA_BEAT_SIZE_WORD, // 32 bit
+    false,              // increment source addr
+    true,
+    DMA_ADDRESS_INCREMENT_STEP_SIZE_1);              // increment dest
+
+  Serial.println( "Adding callbacks ");
+  // callback when transfer is done
+  rxDMA1.setCallback(dma_callback1, DMA_CALLBACK_TRANSFER_DONE);
+  rxDMA2.setCallback(dma_callback2, DMA_CALLBACK_TRANSFER_DONE);
+  
+  // I2S library cannot not set samplerate perfectly, best at at 44100!
+  // More info:
+  // - https://forum.arduino.cc/t/i2s-mclk-output-on-samd21/699032/4
+  // - https://www.eevblog.com/forum/microcontrollers/samd21-can-uartsercom-use-the-48mhz-clock/
+  // - https://blog.thea.codes/understanding-the-sam-d21-clocks/
+  // CPU runs at 48khz:
+  // uint32_t divider = fs_freq * 2 * (width + 1) * 8; //actually means fs * 2 * 32 = bitrate
+  // 48khz means 3072000 bitrate
+  // 44.1khz means 2822400 bitrate
+  // 48000000 / 3072000 = 15.625
+  // 48000000 / 2822400 = 17.006802721088434 -> 44.1khz can be much better approached!
+  // We may run in between at choose to run at 46875.0, why not?!!
+  // mplayer -rawaudio rate=46875:channels=2:samplesize=4 -demuxer rawaudio -cache 1024
+  // find a way to skip the 2nd channel to save buffer room, step size?
+
+  if (!i2s.begin(I2S_32_BIT, 46875, 256)) {
+    while (1);            
+  }
+
+  // uncomment this if your I2S device uses the MCLK line
+  // i2s.enableMCLK();
+  // looping also works, but seems to make the callback on each buffer go away
+  // rxDMA.loop(true);
+  // enable receive channel
+  i2s.enableRx();
+  // call startJob again in each buffer rotating with 2 buffers
+  stat = rxDMA1.startJob();
+}
+void loop()
+{
+  // max time in loop should be
+  // (1000 * BUFSIZE / 2.0) / SR
+  // (1000 * 256 / 2.0) / 46875  = 2.73ms
+  // if we do nothing and sleep 11500 we get no buffer underrun
+  // we can spend 99% of time on processing
+
+  bool AUDIO_OUT = true; // else underrun output mode 
+
+  // sync, get here shortly after we get a new buffer
+  if(resync) {
+    if(newData1 || newData2) {
+      newData1 = false;
+      newData2 = false;
+      resync = false;
+    }
+    return;
+  }
+ 
+  // new data
+  if(newData1) {
+    int c = 0;
+    if(AUDIO_OUT) {
+      int b = micros();
+      Serial.write((uint8_t *)data1, BUFSIZE * sizeof(int32_t));
+      c = micros() - b;
+    } else {
+      underrun-=1;
+      Serial.println(underrun);
+    }
+    newData1 = false;
+    delayMicroseconds(2000 - c);
+  }
+  if(newData2) {
+    int c = 0;
+    if(AUDIO_OUT) {
+      int b = micros();
+      Serial.write((uint8_t *)data2, BUFSIZE * sizeof(int32_t));
+      c = micros() - b;
+    } else {
+      underrun-=1;
+      Serial.println(underrun);
+    }
+    newData2 = false;
+    delayMicroseconds(2000 - c);  
+  }
+
+}
